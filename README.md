@@ -8,7 +8,7 @@ Student: Danial Ansari (s4119075).
 | File | What it is |
 |---|---|
 | `COSC2670-s4119075-A2code.ipynb` | Jupyter notebook with all code, comments and outputs (executed with Restart & Run All) |
-| `COSC2670-s4119075-A2report.pdf` | The report (9 pages, text-searchable PDF built from the provided Word template) |
+| `COSC2670-s4119075-A2report.pdf` | The report (8 pages, text-searchable PDF built from the provided Word template) |
 | `COSC2670-s4119075-A2SampleOne.csv` | Task 1 random sample (300 rows) |
 | `COSC2670-s4119075-A2SampleTwo.csv` | Task 2 random sample (2,000 rows) |
 | `COSC2670-s4119075-A2SampleThree.csv` | Task 3 random sample (2,000 rows) |

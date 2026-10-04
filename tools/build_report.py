@@ -177,325 +177,252 @@ def table(caption, header, rows, col_widths, size=8.5, bold_rows=()):
 
 
 # =================================================================================================
-para("**Data preparation and sampling.** The full dataset (13,611 beans, 16 numeric inputs, 7 classes) "
-     "contains no missing or non-positive values but has 68 exact duplicate rows, which were removed so "
-     "that the same bean cannot appear twice in a sample (e.g. in both a training and a test set). From the "
-     "remaining 13,543 complete, unique rows, three simple random samples without replacement were drawn "
-     "with a fixed seed (300, 2,000 and 2,000 rows) and saved as "
-     "COSC2670-s4119075-A2SampleOne/Two/Three.csv. Each task reloads its saved file, so every result in a "
-     "task is based on the same sample. All analysis uses Python (pandas, scikit-learn; Pedregosa et al., 2011).",
+para("Before starting the tasks I checked the data. All 13,611 rows are complete (no missing values) and every "
+     "measurement is positive, but 68 rows are exact duplicates. I removed those so the same bean could not end up "
+     "in both a training and a test set, which left 13,543 rows. From these I drew the three random samples "
+     "(300, 2,000 and 2,000 rows) with a fixed seed and saved them as COSC2670-s4119075-A2SampleOne/Two/Three.csv. "
+     "Each task loads its own saved file, so all results within a task come from the same sample.",
      before=6)
 
 # =================================================================================================
 heading("Task 1: Regression", 1)
 heading("1.1 Relationship between MajorAxisLength and Perimeter", 2)
-para("Figure 1 shows a very strong, positive and almost linear relationship: longer beans have longer "
-     "outlines (Pearson r = 0.977, Spearman ρ = 0.970). Several patterns and unusual observations stand out:")
-bullet("**Distinct Bombay group.** The 13 Bombay beans form a separate cluster in the top-right corner "
-       "(MajorAxisLength 526–680 px, Perimeter 1,430–1,777 px). They are the only IQR outliers on both "
-       "variables, but they are genuine large beans that follow the same trend, so they were kept. There is a "
-       "gap with no beans between about 450 and 525 px, so the data are not spread evenly over the range, and "
-       "this small group strongly influences (has high leverage on) the fitted line.")
-bullet("**Class-specific bands.** At the same length, round classes have longer perimeters than elongated "
-       "ones. Seker and Barbunya lie above the main trend, and Horoz and Cali lie below it. The relationship "
-       "therefore also depends on bean shape (width), not only on length.")
-bullet("**Increasing spread.** The vertical scatter grows with size and is largest for Barbunya (e.g. one "
-       "bean of about 405 px has a perimeter of 1,340 px), which suggests irregular outlines and mild "
-       "heteroscedasticity, meaning the variance is not constant.")
-figure("fig1_t1_scatter.png", "Perimeter versus MajorAxisLength for the 300 sampled beans; colour and "
-       "marker show the bean class, which is used only to explain the patterns.", width_cm=11.5)
+para("Figure 1 shows that the two variables have a very strong, positive and almost straight-line relationship "
+     "(Pearson r = 0.977). This makes sense, because a longer bean has a longer outline. I coloured the points by "
+     "bean class only to help explain what I saw. Three things stood out to me.")
+para("First, the 13 Bombay beans sit on their own in the top-right corner (lengths of 526–680 px). They are the "
+     "only outliers on both variables, but they are real, large beans that follow the same trend, so I kept them. "
+     "Between about 450 and 525 px there are no beans at all, so the data are not spread evenly, and this small "
+     "group has a lot of pull on the fitted line.")
+para("Second, the classes form slightly different bands. At the same length, rounder beans (Seker, Barbunya) have "
+     "a longer perimeter than elongated ones (Horoz, Cali). So perimeter depends on shape as well as on length.")
+para("Third, the spread gets wider as beans get bigger, and it is widest for Barbunya. One Barbunya bean of about "
+     "405 px has a perimeter of 1,340 px, well above the others, which points to an irregular outline.")
+figure("fig1_t1_scatter.png", "Perimeter against MajorAxisLength for the 300 sampled beans, coloured by class.",
+       width_cm=11.5)
 
 heading("1.2 Simple linear regression model", 2)
-para("The sample was split at random into 240 training and 60 test beans. An ordinary least-squares model with "
-     "Perimeter as the dependent variable and MajorAxisLength as the independent variable was fitted on the "
-     "training data:")
-para("**Perimeter = 53.90 + 2.520 × MajorAxisLength**   (95% CI: slope [2.447, 2.593], intercept [29.5, 78.3])",
-     align=WD_ALIGN_PARAGRAPH.CENTER)
-para("**Interpretation of the coefficients.** The slope means that every extra pixel of major-axis length "
-     "increases the expected perimeter by about 2.52 pixels, or about 25 px per 10 px of length. This is "
-     "geometrically plausible. An ellipse with major axis L has a perimeter between 2L (a very flat shape) and "
-     "πL ≈ 3.14L (a circle), and beans are ellipse-like with an average aspect ratio of about 1.6, so a factor "
-     "near 2.5 is expected. The intercept is the predicted perimeter for a bean of zero length. That lies far "
-     "outside the observed range (201–680 px), so it has no physical meaning and only positions the line. It "
-     "is positive because perimeter also depends on the minor axis (width), which this model does not include.")
-table("Regression performance (Perimeter in pixels).",
+para("I split the sample randomly into 240 training and 60 test beans and fitted an ordinary least-squares line "
+     "on the training beans, with Perimeter as the dependent variable:")
+para("**Perimeter = 53.90 + 2.520 × MajorAxisLength**", align=WD_ALIGN_PARAGRAPH.CENTER)
+para("The slope means that each extra pixel of length adds about 2.52 pixels of perimeter on average (95% "
+     "confidence interval 2.45 to 2.59). This value seemed reasonable to me: a very flat ellipse has a perimeter "
+     "close to 2 × its length, and a circle has π × its diameter ≈ 3.14 ×, so a bean-shaped object should land "
+     "somewhere between the two. The intercept (53.9) would be the perimeter of a bean with zero length. That is "
+     "far outside the data (the shortest bean is 201 px), so it has no real meaning and just positions the line. "
+     "It is probably positive because perimeter also depends on width, which this model leaves out.")
+table("Regression performance (errors in pixels).",
       ["Data", "R²", "RMSE", "MAE", "MAPE"],
       [["Training set (n = 240)", "0.951", "48.95", "35.35", "3.98%"],
        ["Test set (n = 60)", "0.971", "34.60", "27.29", "3.40%"],
        ["10-fold CV, all 300 (mean ± SD)", "0.953 ± 0.019", "45.11 ± 12.68", "–", "–"]],
       [5.6, 2.6, 2.6, 1.8, 1.8])
-para("**How well does the model represent the relationship?** Using R² (the share of variance explained), "
-     "RMSE and MAE (typical errors in pixels) and MAPE (relative error), the line explains about 95–97% of "
-     "the variation in perimeter, with a typical error of 27–35 px (3.4–4.0%). The test R² is slightly higher "
-     "than the training R² only because the small random test set happens to contain few of the irregular "
-     "Barbunya beans. 10-fold cross-validation confirms a stable R² of 0.953. The residual plot (Figure 2b) "
-     "shows the model's limitation: the residuals are **not random but depend on the class**. Elongated Horoz "
-     "(mean residual −61 px) and Cali (−26 px) are over-predicted, while round Seker (+45 px), Barbunya (+59 px) "
-     "and Bombay (+37 px) are under-predicted. The residuals correlate strongly with AspectRation "
-     "(r = −0.72), so most of the remaining error comes from bean shape, which a single length variable "
-     "cannot capture. Overall, the linear model is an accurate first-order description of how perimeter grows "
-     "with size. Adding a width or shape variable (multiple regression), or letting the slope differ by class, "
-     "would remove the systematic error.")
-figure("fig2_t1_fit_residuals.png", "(a) Training and test points with the fitted regression line; "
-       "(b) residuals versus fitted values coloured by class, showing systematic, shape-related errors.")
+para("Overall the line represents the relationship well. It explains about 95–97% of the variation in perimeter, "
+     "and the typical error is around 30–35 px, or 3–4% of a bean's perimeter (Table 1). The test score is a little "
+     "higher than the training score, but that is just luck of the split: only 3 of the 60 test beans are Barbunya, "
+     "the class with the largest errors. Cross-validation gives a steady R² of 0.953. The residual plot (Figure 2b) "
+     "shows the main weakness. The errors are not random but depend on the class. Horoz beans are over-predicted "
+     "by about 61 px on average, while Seker, Barbunya and Bombay are under-predicted by 37–59 px. The residuals "
+     "are strongly related to aspect ratio (r = −0.72), so the missing piece is shape. Adding a width or shape "
+     "variable would fix most of this.")
+figure("fig2_t1_fit_residuals.png", "(a) Training and test beans with the fitted line; (b) residuals against "
+       "fitted values, coloured by class.")
 
 # =================================================================================================
 heading("Task 2: Classification", 1)
-para("Sample Two (2,000 beans: Dermason 546, Sira 400, Horoz 286, Seker 273, Cali 225, Barbunya 190, "
-     "Bombay 80) was split once into a **stratified 80/20 training/test split** (1,600/400). Stratification "
-     "keeps the class proportions, including the small Bombay class, the same in both sets, and the same split "
-     "is reused for every classifier. All model development (preprocessing parameters and hyperparameters) "
-     "used only the training data, with **10-fold stratified cross-validation repeated 3 times (30 folds)**. "
-     "Preprocessing was placed inside a scikit-learn Pipeline so that it is re-fitted on the training folds "
-     "only, which prevents data leakage. Because the classes are imbalanced, the selection criterion is "
-     "**macro-F1**, which weights every class equally. The test set was used once per model for the final "
-     "evaluation with the same metrics: accuracy, macro precision, macro recall, macro F1 and the confusion "
-     "matrix.")
+para("Sample Two has 2,000 beans, and the classes are uneven: from 546 Dermason down to only 80 Bombay. I made "
+     "one stratified 80/20 split (1,600 training and 400 test beans), so both sets keep the same class "
+     "proportions, and used this same split for every model. All tuning was done on the training set with "
+     "10-fold stratified cross-validation repeated 3 times. Scaling was placed inside a pipeline so it was only "
+     "ever fitted on training folds. Because of the class imbalance I used macro F1 (every class counts "
+     "equally) to choose settings. For the final test I report accuracy, macro precision, macro recall and "
+     "macro F1.")
 
 heading("2.1 k-Nearest Neighbours (kNN)", 2)
-para("**Preprocessing.** kNN classifies a bean by the classes of the beans closest to it in Euclidean "
-     "distance, so features with large numeric ranges dominate. Here the scales differ by about seven orders "
-     "of magnitude (Area ≈ 53,000 px versus ShapeFactor2 ≈ 0.0017). All 16 inputs were therefore "
-     "z-standardised to mean 0 and SD 1. The evidence is clear: without scaling, the best CV macro-F1 is only "
-     "0.631, against 0.931 with scaling. There were no missing values or categorical inputs to handle.")
-para("**Choice of k.** k = 1–40 was evaluated (Figure 3a). Very small k overfits to individual noisy "
-     "beans (k = 1: macro-F1 0.907; k = 2: 0.894, caused by frequent ties). Performance then reaches a "
-     "broad plateau between k ≈ 8 and 20 (all within 0.005 of the best), and declines slowly for larger "
-     "k (0.922 at k = 40), as neighbourhoods become so large that boundary beans are absorbed by bigger "
-     "neighbouring classes. **k = 14** gave the highest CV macro-F1 (0.931 ± 0.017; accuracy 0.919). It lies "
-     "in the middle of the plateau, so the choice is robust and is not a single lucky peak.")
-para("**Test performance.** Accuracy = 0.923, macro precision = 0.931, macro recall = 0.927 and macro "
-     "F1 = 0.929. Bombay is recognised perfectly (it is far larger than every other variety). Most of the 31 "
-     "errors involve two pairs of morphologically similar varieties: **Dermason↔Sira** (13 errors) and "
-     "**Barbunya↔Cali** (7 errors), as shown in Figure 3b. This matches the original study of the dataset, in "
-     "which Sira was also the hardest class (Koklu & Ozkan, 2020).")
-figure("fig3_t2_knn.png", "(a) Repeated 10-fold CV macro-F1 (±1 SD band) and accuracy for k = 1–40 on the "
-       "training set; (b) confusion matrix of the selected kNN (k = 14) on the 400 test beans.")
+para("kNN decides by distance, so the feature scales matter a lot. Area is in the tens of thousands while "
+     "ShapeFactor2 is around 0.002, so without scaling Area would decide almost everything. I therefore "
+     "standardised all 16 features. The difference was large: the best cross-validated macro F1 was only 0.631 "
+     "without scaling, compared with 0.931 with it.")
+para("To choose k, I tried every value from 1 to 40 (Figure 3a). Very small k did poorly, because the model "
+     "reacts to single noisy beans (k = 1 gave 0.907 and k = 2 gave 0.894). From about k = 8 to 20 the score is "
+     "flat, and after that it slowly drops as the neighbourhoods get too big and smaller classes get out-voted. "
+     "I chose **k = 14** because it had the best score (macro F1 0.931) and sits in the middle of the flat region, "
+     "so a slightly different k would give almost the same result.")
+para("On the test set the tuned kNN reached an accuracy of 0.923, macro precision 0.931, macro recall 0.927 "
+     "and macro F1 0.929. Bombay was classified perfectly, since it is so much bigger than the other beans. Most "
+     "of the 31 mistakes were between Dermason and Sira (13) and between Barbunya and Cali (7), as Figure 3b "
+     "shows. These pairs simply look alike.")
+figure("fig3_t2_knn.png", "(a) Cross-validated macro F1 and accuracy for k = 1–40; (b) test confusion matrix "
+       "for k = 14.")
 
 heading("2.2B Advanced improvement strategy: Local Mean-based kNN", 2)
-para("**Motivation.** Standard kNN has three weaknesses on this data. (i) The majority vote favours large, "
-     "dense classes: near the Dermason/Sira boundary most neighbours come from the bigger Dermason class "
-     "(546 vs 400 beans). (ii) A few noisy or atypical neighbours (e.g. irregular Barbunya beans) can flip "
-     "the vote. (iii) Votes ignore how close the neighbours are and can produce ties.")
-para("**Modification of the prediction mechanism.** I implemented, from scratch as a scikit-learn "
-     "estimator, the __local mean-based kNN__ rule (LMKNN; Mitani & Hamamoto, 2006), which changes how "
-     "neighbours contribute to the decision:")
-bullet("**Class-conditional neighbours.** For a query bean x, the k nearest neighbours are searched "
-       "separately __within each class__, so every class gets exactly k representatives regardless of its "
-       "size or local density.")
-bullet("**Local means instead of votes.** The k neighbours of class c are averaged into a local mean vector "
-       "m_c(x) = (1/k)·Σ x_i^c. This acts as a local class centroid that adapts to where the query lies, and "
-       "averaging cancels the effect of single noisy neighbours.")
-bullet("**Distance-based decision.** x is assigned to the class whose local mean is closest, "
-       "ŷ = argmin_c ‖x − m_c(x)‖. The decision uses continuous distances, so voting ties disappear. With "
-       "k = 1 the rule equals 1-NN, and as k approaches the class size it becomes a nearest-centroid "
-       "classifier, so k gives a smooth bias–variance trade-off.")
-para("I also implemented a multi-scale extension, the local mean-based pseudo nearest neighbour "
-     "(LMPNN; Gou et al., 2014). It computes the local means of the first 1, 2, …, k neighbours of each class "
-     "and scores each class by the weighted sum Σ_j (1/j)·‖x − m_c^j(x)‖. Both variants use the same "
-     "standardisation pipeline, CV folds, k range (1–40), selection metric and test split as the original kNN.")
-table("Classification results. CV = repeated 10-fold CV on the training set; test = 400 held-out beans.",
+para("Looking at the kNN errors, I thought the majority vote itself was part of the problem. Near the "
+     "Dermason/Sira border most neighbours tend to be Dermason simply because there are more of them (546 vs 400). "
+     "One odd neighbour also counts as a full vote, and the vote ignores how close each neighbour actually is.")
+para("I therefore changed how the neighbours are used, following the local mean-based kNN idea of Mitani and "
+     "Hamamoto (2006). I wrote the classifier myself as a scikit-learn style class. For a new bean x:")
+bullet("for each class separately, it finds the k training beans of that class that are closest to x;")
+bullet("it averages those k beans into one 'local mean' point for that class;")
+bullet("it predicts the class whose local mean is closest to x.")
+para("This changes three things. Every class gets exactly k representatives, so a big class cannot win just by "
+     "being big. Averaging smooths out single noisy beans. And the decision is a distance, not a vote, so there "
+     "are no ties. With k = 1 it behaves exactly like 1-NN, and with very large k it becomes a "
+     "'closest class centre' rule. I also tried a weighted version that combines local means of 1, 2, …, k "
+     "neighbours (LMPNN, Gou et al., 2014). Both versions used the same pipeline, the same folds, the same k range "
+     "and the same test split as the original kNN.")
+table("Classification results (CV = repeated cross-validation on the training set; test = 400 beans).",
       ["Model", "Chosen parameter(s)", "CV macro-F1", "Test acc.", "Test macro-P", "Test macro-R", "Test macro-F1"],
       [["kNN (original, 2.1)", "k = 14", "0.931", "0.923", "0.931", "0.927", "0.929"],
-       ["LMKNN (proposed, 2.2B)", "k = 9", "0.936", "0.935", "0.941", "0.935", "0.938"],
-       ["LMPNN (extension)", "k = 38", "0.934", "0.928", "0.937", "0.933", "0.935"],
+       ["Local mean kNN (2.2B)", "k = 9", "0.936", "0.935", "0.941", "0.935", "0.938"],
+       ["Weighted version (LMPNN)", "k = 38", "0.934", "0.928", "0.937", "0.933", "0.935"],
        ["Decision Tree (2.3)", "entropy, depth 6, leaf 10", "0.907", "0.873", "0.880", "0.879", "0.879"]],
       [4.2, 3.6, 1.84, 1.84, 1.84, 1.84, 1.84], bold_rows=(1,))
-para("**Results.** LMKNN obtained the best CV macro-F1 (0.936 at k = 9) and was selected as the proposed "
-     "model. It also improved every test metric over the original kNN: accuracy rose from 0.923 to 0.935 "
-     "(26 instead of 31 errors) and macro-F1 from 0.929 to 0.938 (Table 2, Figure 4b). The per-class view "
-     "(Figure 4c) shows that the gains are concentrated where the motivation predicted, in the overlapping "
-     "small-bean group of different sizes: Dermason F1 0.927→0.950, Sira 0.896→0.915, Seker 0.954→0.972. "
-     "Sira→Dermason errors fell from 7 to 5, Dermason→Sira from 6 to 5, and Dermason→Seker from 2 to 0. "
-     "Figure 4a also shows the different mechanisms. The original kNN degrades for larger k, as large classes "
-     "increasingly dominate the vote. LMKNN stays above kNN for all k ≥ 5, and LMPNN rises steadily and is the "
-     "least sensitive to large k, because its 1/j weights keep the nearest neighbours dominant.")
-para("**Does it improve performance?** Yes, consistently but modestly. The improvement appears both in CV "
-     "(+0.45 pp macro-F1) and on the test set (+1.25 pp accuracy). However, an exact McNemar test on the "
-     "paired test predictions (7 beans corrected only by LMKNN versus 2 only by kNN) gives p = 0.18, so the "
-     "difference is not statistically significant with 400 test beans. The modification helps when classes "
-     "overlap and differ in size or density, because a local centroid per class estimates the class-"
-     "conditional structure around x better than a vote dominated by the larger class. It cannot help "
-     "Barbunya and Cali (F1 unchanged at 0.892 and 0.879), whose overlap is genuine in this feature space "
-     "(Figure 8a): no rule based on Euclidean distance separates them. Too large a k pulls the local mean "
-     "across curved class boundaries (bias), which is why the best k is smaller than for kNN. The cost is "
-     "small: prediction needs one neighbour search per class (14 ms vs 9 ms for 400 beans). LMKNN still "
-     "depends on scaling and on a Euclidean metric in which the many correlated size features are "
-     "over-weighted, which also limits the gain.")
-figure("fig4_t2_modified_knn.png", "(a) CV macro-F1 versus k for the original kNN and the two local-mean "
-       "modifications; (b) test-set metrics on the same split; (c) per-class test F1. Colours are consistent "
-       "across panels.")
+para("The simple local mean version had the best cross-validation score (k = 9), so that is my proposed model. "
+     "It beat the original kNN on every test metric: accuracy went from 0.923 to 0.935 (26 errors instead of 31) "
+     "and macro F1 from 0.929 to 0.938 (Table 2, Figure 4b). The gains are where I expected them, in the "
+     "similar-looking small beans. Dermason F1 went from 0.927 to 0.950, Sira from 0.896 to 0.915 and Seker from "
+     "0.954 to 0.972 (Figure 4c). Figure 4a also shows that the original kNN gets worse as k grows, while both "
+     "local mean versions stay higher and are less affected by the choice of k.")
+para("I would call this a real but small improvement. It shows up in cross-validation and on the test set. "
+     "However, only 9 test beans are right for one model and wrong for the other (7 in favour of the new method, 2 against), and a "
+     "McNemar test gives p = 0.18, so 400 test beans are not enough to prove it statistically. It helps when "
+     "classes overlap and differ in size, but it did nothing for Barbunya and Cali (F1 unchanged), because those "
+     "two really do overlap in this feature space (Figure 8a), and no distance-based rule can separate beans that "
+     "sit on top of each other. If k is too large, the local mean also gets pulled across the class border, which "
+     "is why the best k is smaller than for normal kNN. The extra cost is small: predicting the 400 test beans "
+     "took 14 ms instead of 9 ms.")
+figure("fig4_t2_modified_knn.png", "(a) Cross-validated macro F1 against k for the original kNN and the two "
+       "local mean versions; (b) test metrics on the same split; (c) test F1 for each class.")
 
 heading("2.3 Decision Tree", 2)
-para("A decision tree splits on one feature threshold at a time, so it is scale-invariant and needs no "
-     "standardisation. Its key complexity parameters were tuned jointly with the same 30-fold CV and macro-F1 "
-     "criterion: **max_depth** (1–20 and unlimited), **min_samples_leaf** (1, 2, 5, 10, 20) and the split "
-     "**criterion** (Gini or entropy), 210 combinations in total. The best tree uses **entropy, "
-     "max_depth = 6 and min_samples_leaf = 10** (CV macro-F1 0.907; the final tree has 38 leaves). The "
-     "validation curve (Figure 5a) justifies this choice. Trees with depth ≤ 4 underfit (depth 3: F1 0.75). "
-     "The validation score peaks at depth 6 and then stays flat or falls slightly while the training score "
-     "keeps rising, so deeper trees only add complexity. An unpruned tree reaches a training F1 of 1.000 but "
-     "a CV F1 of only 0.895, which is clear overfitting. A minimum of 10 beans per leaf stops leaves from "
-     "memorising individual beans.")
-para("**Comparison with the original kNN.** On the test set the tree reaches accuracy 0.873, macro "
-     "precision 0.880, recall 0.879 and F1 0.879, about 5 percentage points below kNN on every metric "
-     "(Table 2, Figure 5b). The CV gap is smaller (0.907 vs 0.931), so part of the test gap is sampling noise, "
-     "but kNN is better on both. The tree's weakest classes are Barbunya (F1 0.73; 9 of 38 predicted as Cali), "
-     "Sira (0.82) and Cali (0.83). Bombay (1.00) and Seker (0.96) remain easy. The feature importances "
-     "(Figure 5c) show that the tree first uses size (MajorAxisLength 0.33, MinorAxisLength 0.15) and then "
-     "shape (ShapeFactor1 0.16, ShapeFactor3 0.09). Redundant copies of size, such as ConvexArea and "
-     "EquivDiameter, receive zero importance because the tree only needs one variable from each correlated "
-     "group.")
-para("**Strengths and weaknesses of each model on this dataset:**")
-bullet("**Predictive performance.** kNN wins. The boundaries between varieties are smooth, oblique "
-       "combinations of correlated size and shape features (e.g. Dermason versus Sira lie along a size–shape "
-       "diagonal). A tree can only approximate such boundaries with axis-parallel 'staircases', which needs "
-       "many splits and therefore more data, whereas kNN adapts locally.")
-bullet("**Interpretability.** The tree wins. Its 38 if–then rules and feature importances explain __why__ "
-       "a bean is classified (e.g. Bombay is isolated by a single size threshold). kNN has no global model; "
-       "it can only justify a prediction by pointing to similar beans.")
-bullet("**Model complexity and cost.** kNN is a lazy learner. It has almost no training cost, but it must "
-       "store all 1,600 training beans and compute distances to them for every prediction. The tree is a "
-       "compact model of depth 6, slower to train (23 ms vs 7 ms) but faster to predict (2.5 ms vs 5.5 ms), "
-       "and it scales better to large data.")
-bullet("**Sensitivity to data characteristics.** kNN is very sensitive to feature scaling (0.63 vs 0.93), "
-       "to redundant or irrelevant features (here eight correlated size variables share the distance), to "
-       "noise when k is small, and to class imbalance. The tree is insensitive to scaling and monotone "
-       "transformations and ignores irrelevant features, but it has high variance: small changes in the data "
-       "can change the splits, and it overfits without depth or leaf constraints. Its leaves give little "
-       "support to small classes.")
-para("Overall, kNN (and its local-mean modification) is preferable when accuracy matters, and the tree is "
-     "preferable when an explainable rule set is required. Tree ensembles such as random forests would "
-     "reduce the tree's variance and narrow the accuracy gap.")
-figure("fig5_t2_decision_tree.png", "(a) Training versus validation macro-F1 over max_depth for the best "
-       "criterion and leaf size; (b) kNN versus Decision Tree on test metrics and CV macro-F1; "
-       "(c) the eight most important tree features.")
+para("A decision tree splits on one feature at a time, so it does not need scaling. I tuned the tree depth "
+     "(1–20 or unlimited), the minimum number of beans per leaf (1, 2, 5, 10 or 20) and the split criterion "
+     "(Gini or entropy) together, using the same cross-validation. The best combination was **entropy, depth 6 "
+     "and at least 10 beans per leaf** (CV macro F1 0.907), which gives a tree with 38 leaves. The validation curve "
+     "in Figure 5a explains why I settled on depth 6. Shallower trees underfit (depth 3 only reaches 0.75), the "
+     "validation score peaks at 6, and deeper trees only improve the training score. A fully grown tree scores "
+     "1.000 on training data but only 0.895 in cross-validation, which is clear overfitting. The 10-bean minimum "
+     "stops leaves from being built around single beans.")
+para("On the test set the tree got an accuracy of 0.873 and a macro F1 of 0.879, about 5 points below kNN on every "
+     "metric (Table 2, Figure 5b). Its cross-validation score was also lower (0.907 vs 0.931), so this was not "
+     "just a bad split. The tree struggled most with Barbunya (F1 0.73, with 9 of 38 called Cali), Sira (0.82) "
+     "and Cali (0.83). Figure 5c shows that it relies mostly on size (MajorAxisLength, MinorAxisLength) and then "
+     "on shape (ShapeFactor1 and 3). Duplicate size measures such as ConvexArea were not used at all.")
+para("Comparing the two models on this dataset:")
+bullet("**Predictive performance:** kNN is clearly better. The borders between bean types are smooth diagonal "
+       "mixes of size and shape, which kNN can follow. A tree can only make straight cuts on one feature at a "
+       "time, so it needs many steps to follow a diagonal border.")
+bullet("**Interpretability:** the tree wins. I can read its rules and see which features matter (for example, "
+       "Bombay is separated by a single size cut). kNN cannot give a reason beyond 'these beans look similar'.")
+bullet("**Complexity:** kNN has almost no training step, but it must keep all 1,600 training beans and compare "
+       "every new bean with all of them. The tree takes a little longer to train (23 ms vs 7 ms) but is a small "
+       "model that predicts faster (2.5 ms vs 5.5 ms).")
+bullet("**Sensitivity to the data:** kNN depends heavily on scaling (0.63 vs 0.93), on duplicated features and "
+       "on k. The tree does not care about scaling and ignores useless features, but small changes in the data "
+       "can change its splits, and it overfits if depth is not limited.")
+para("If accuracy is the goal I would use kNN (or the local mean version). If the result has to be explained to "
+     "someone, the tree is the better choice.")
+figure("fig5_t2_decision_tree.png", "(a) Training and validation macro F1 against tree depth; (b) kNN and the "
+       "decision tree on the same metrics; (c) the eight most important tree features.")
 
 # =================================================================================================
 heading("Task 3: Clustering", 1)
-para("Sample Three (2,000 beans) was used with all 16 inputs. The Class column was removed before any "
-     "modelling. It was **never used to fit a model or choose a parameter**, only afterwards for external "
-     "evaluation (adjusted Rand index, ARI; normalised mutual information, NMI; homogeneity; completeness; "
-     "contingency tables). The inputs were z-standardised, because distance-based clustering would otherwise "
-     "be driven by Area and ConvexArea. Internal quality was measured with the silhouette coefficient "
-     "(higher is better; Rousseeuw, 1987), the Davies–Bouldin index (lower is better) and the "
-     "Calinski–Harabasz index (higher is better). ARI is 0 for random labels and 1 for perfect agreement "
-     "(Hubert & Arabie, 1985). Note that 21 of the 120 feature pairs have |r| > 0.9.")
+para("For this task I used Sample Three (2,000 beans) and all 16 features. I removed the Class column before "
+     "clustering and did not use it to choose any settings. It was only used afterwards to check how well the "
+     "clusters matched the real bean types, using the adjusted Rand index (ARI, 0 = random, 1 = perfect) and "
+     "normalised mutual information (NMI). All features were standardised first. To measure cluster quality "
+     "without labels I used the silhouette score (higher is better), the Davies–Bouldin index (lower is better) "
+     "and the Calinski–Harabasz index (higher is better).")
 
 heading("3.1 k-Means", 2)
-para("k-Means (k-means++ initialisation, 10 restarts) was run for k = 2–12 (Figure 6). The criteria do "
-     "not fully agree. The elbow of the inertia curve (the point farthest from the chord between the first "
-     "and last points, a 'kneedle'-style rule; Satopää et al., 2011) is k = 5. The silhouette is highest at "
-     "**k = 3** (0.403), Davies–Bouldin is lowest at **k = 3** (0.910), and Calinski–Harabasz is highest at "
-     "k = 2. Taking the majority of these internal criteria, **k = 3** was chosen. It is a clear joint "
-     "optimum of the two separation-based indices, while the inertia curve declines smoothly with only a weak "
-     "elbow.")
-figure("fig6_t3_kmeans_k.png", "Effect of the number of clusters k on (a) inertia, (b) silhouette, "
-       "(c) Davies–Bouldin and (d) Calinski–Harabasz for k-Means; the dashed line marks the chosen k = 3.")
-table("k-Means (k = 3) clusters versus the true classes (contingency table) and mean cluster profiles.",
+para("I ran k-Means for k = 2 to 12 (Figure 6). The measures did not all agree. The elbow of the inertia curve is "
+     "around k = 5, but it is not a sharp bend. The silhouette is highest at k = 3 (0.403), Davies–Bouldin is "
+     "lowest at k = 3 (0.910), and Calinski–Harabasz prefers k = 2. Since two of the measures clearly point to "
+     "it, I chose **k = 3**.")
+figure("fig6_t3_kmeans_k.png", "How k affects (a) inertia, (b) silhouette, (c) Davies–Bouldin and "
+       "(d) Calinski–Harabasz. The dashed line marks k = 3.")
+table("The three k-Means clusters compared with the real classes, plus average size and shape.",
       ["Cluster", "Barbunya", "Bombay", "Cali", "Dermason", "Horoz", "Seker", "Sira", "Mean Area", "Aspect ratio"],
       [["0 (n = 820)", "190", "0", "247", "5", "274", "0", "104", "64,036", "1.78"],
        ["1 (n = 1,098)", "17", "0", "0", "525", "4", "295", "257", "37,237", "1.43"],
        ["2 (n = 82)", "1", "81", "0", "0", "0", "0", "0", "172,026", "1.59"]],
       [2.2, 1.75, 1.6, 1.1, 1.85, 1.4, 1.4, 1.1, 1.75, 1.8], size=8)
-para("**Results and interpretation.** The k = 3 solution has silhouette 0.403, DB 0.910 and CH 1,288. "
-     "Against the varieties it reaches ARI 0.306 and NMI 0.495, with high completeness (0.80) but low "
-     "homogeneity (0.36). In other words, each variety is mostly kept together, but clusters mix several "
-     "varieties. Table 3 and Figure 8b show that k-Means recovers a **size-driven grouping**: a very large "
-     "cluster (81 of 81 Bombay beans), a small and round cluster (Dermason, Seker and most Sira; aspect "
-     "ratio 1.43) and a medium-to-large, more elongated cluster (Horoz, Cali and Barbunya; aspect ratio 1.78). "
-     "For reference only, k = 7 (the number of registered varieties) would give ARI 0.653 but a lower "
-     "silhouette (0.303). The varieties overlap and are not separated by gaps, so internal criteria do not "
-     "favour them.")
-para("**Limitations of k-Means for this dataset and possible solutions:**")
-bullet("**k must be given, and the indices disagree** (2, 3 or 5). Possible solutions: stability-based "
-       "selection, the gap statistic, domain knowledge, or a Gaussian mixture model with BIC.")
-bullet("**Spherical, equal-variance assumption.** The bean classes are elongated, correlated ellipsoids "
-       "of very different sizes and densities, and the 82 Bombay beans are far from the rest (Figure 8a). "
-       "Possible solution: a Gaussian mixture with full covariance matrices, or clustering in a "
-       "decorrelated (Mahalanobis or whitened) space.")
-bullet("**Redundant features bias the distance.** About eight size variables (Area, Perimeter, both axes, "
-       "ConvexArea, EquivDiameter, …) give 'size' several times more weight than shape, so the clusters follow "
-       "size. Possible solutions: feature selection, feature weighting or PCA (examined in 3.3B).")
-bullet("**Sensitivity to initialisation and outliers.** The seed stability of a single run is only 0.84 "
-       "(Table 5). Remedies: k-means++ with several restarts (used here), and robust scaling or k-medoids "
-       "for outliers.")
+para("With k = 3 the silhouette is 0.403, Davies–Bouldin 0.910 and Calinski–Harabasz 1,288. Against the real "
+     "classes the ARI is 0.306 and the NMI 0.495. Table 3 shows what happened: k-Means grouped the beans mainly "
+     "by size. One cluster is almost entirely Bombay (very large), one holds the small, rounder beans (Dermason, "
+     "Seker and most Sira) and one holds the medium, longer beans (Horoz, Cali, Barbunya). Each bean type mostly "
+     "stays together, but each cluster mixes several types. Out of interest I also checked k = 7 (the number of "
+     "bean types) without using it for the choice. It gave a much better ARI (0.653) but a worse silhouette "
+     "(0.303), because the seven types touch each other without clear gaps.")
+para("I noticed several limitations of k-Means here. First, k has to be chosen in advance, and the measures "
+     "disagreed (2, 3 or 5); a stability check or the gap statistic could help. Second, k-Means expects round "
+     "clusters of similar size, but the bean groups are stretched, overlapping and very different in size (82 "
+     "Bombay against more than 1,000 small beans); a Gaussian mixture model would handle this better. Third, "
+     "about eight of the features all measure size, so size is effectively counted several times and dominates "
+     "the distances, which is why the clusters follow size; feature selection or PCA (Task 3.3B) could reduce "
+     "this. Finally, the result depends on the starting points (runs with a single start only agree with each "
+     "other at ARI 0.84), so I used 10 restarts.")
 
 heading("3.2 DBSCAN", 2)
-para("**Parameter choice.** MinPts was set to **2 × dimensionality = 32** (Sander et al., 1998; Schubert "
-     "et al., 2017). In 16 dimensions a larger MinPts gives more reliable density estimates and less "
-     "sensitivity to noise. eps was taken from the **k-distance graph**, which sorts every bean's distance to "
-     "its 32nd nearest neighbour (Figure 7a). Points left of the knee lie in dense regions and the steep tail "
-     "contains sparse points. The knee, found with the same chord-distance rule, gives **eps = 2.48** (94.8th "
-     "percentile). A sensitivity grid (Figure 7b) shows that the choice is not fragile: with MinPts = 32, "
-     "every eps from 2.0 to 2.75 gives the same two-cluster solution with 1–3% noise, and neighbouring "
-     "MinPts values give one or two clusters. Smaller eps (≤ 1.75) fragments the data and marks 8–53% of "
-     "the beans as noise (MinPts ≥ 32), while eps = 3.0 merges almost everything into one cluster.")
-para("**Results.** DBSCAN found **2 clusters** (1,901 and 72 beans) and **27 noise points (1.4%)**. "
-     "Cluster 1 contains only Bombay beans (72), while cluster 0 contains all six other varieties. The noise "
-     "points are mainly extreme Horoz (12) and Bombay (8) beans.")
-table("k-Means versus DBSCAN in the same standardised space (DB = Davies–Bouldin, CH = Calinski–Harabasz; "
-      "internal metrics exclude DBSCAN noise; external metrics treat noise as its own group).",
+para("For MinPts I used the common rule of thumb of twice the number of features, 2 × 16 = 32, since a larger "
+     "value gives steadier density estimates in 16 dimensions. To choose eps I sorted every bean's distance to its "
+     "32nd nearest neighbour (Figure 7a) and took the knee of the curve, where the distances suddenly shoot up. "
+     "That gave **eps = 2.48**. Beans past the knee are in sparse areas and should count as noise. I also tried a "
+     "grid of other values (Figure 7b). With MinPts = 32, every eps from 2.0 to 2.75 gave the same two clusters "
+     "with 1–3% noise, so the choice is not fragile. Much smaller eps broke the data into pieces and labelled "
+     "8–53% of the beans as noise, while eps = 3.0 merged almost everything into one cluster.")
+para("DBSCAN found **2 clusters** (1,901 and 72 beans) and **27 noise points (1.4%)**. The small cluster is made "
+     "up only of Bombay beans, and the big one contains all six other types. Most noise points were unusually "
+     "long Horoz beans (12) and Bombay beans (8).")
+table("k-Means and DBSCAN on the same standardised data (DB = Davies–Bouldin, CH = Calinski–Harabasz; "
+      "DBSCAN noise points are left out of the internal scores).",
       ["Algorithm", "Clusters", "Noise", "Silhouette ↑", "DB ↓", "CH ↑", "ARI ↑", "NMI ↑"],
       [["k-Means (k = 3)", "3", "0%", "0.403", "0.910", "1,288", "0.306", "0.495"],
        ["DBSCAN (eps = 2.48, MinPts = 32)", "2", "1.4%", "0.554", "0.529", "557", "0.034", "0.158"]],
       [5.4, 1.9, 1.5, 2.3, 1.4, 1.5, 1.5, 1.5])
-para("**Comparison and reasons for the differences.** DBSCAN scores better on the separation indices "
-     "(silhouette 0.554 vs 0.403; DB 0.529 vs 0.910) but far worse against the varieties (ARI 0.034 vs 0.306; "
-     "NMI 0.158 vs 0.495). The silhouette advantage is not caused by removing noise, because k-Means scores "
-     "0.408 on the same non-noise beans. The algorithms differ for three reasons:")
-bullet("**Different definitions of a cluster.** k-Means divides the space into k convex cells that "
-       "minimise within-cluster variance, and it cuts a continuous mass whenever that lowers the error. It "
-       "therefore splits the main body of beans into small versus medium/large beans (Figure 8b). DBSCAN only "
-       "separates **density-connected** regions. The six non-Bombay varieties touch and overlap in one "
-       "continuous dense cloud without low-density valleys (Figure 8a), so any eps large enough to connect a "
-       "variety also chains it to its neighbours. Only Bombay is separated by a real empty gap.")
-bullet("**What the internal metrics reward.** The 'Bombay versus rest' split is extremely well separated, "
-       "so it scores well internally even though it carries little information about the varieties. This "
-       "shows that internal indices alone can be misleading.")
-bullet("**Strengths and weaknesses.** DBSCAN needs no k, flags outliers and can find arbitrary shapes. "
-       "However, it uses one global density threshold (Dermason is dense while Bombay is sparse), and "
-       "distance contrast shrinks in 16 dimensions, which makes eps hard to set. HDBSCAN or OPTICS, which "
-       "allow varying densities, or clustering in a reduced space, are possible remedies.")
-figure("fig7_t3_dbscan.png", "(a) Sorted distance to the 32nd nearest neighbour with the chosen eps at the "
-       "knee; (b) number of clusters and noise percentage over a grid of eps and MinPts; (c) k-Means versus "
-       "DBSCAN on the same internal and external metrics.")
-figure("fig8_t3_cluster_maps.png", "Beans projected onto the first two principal components (for "
-       "visualisation only): (a) true classes, (b) k-Means clusters (k = 3), (c) DBSCAN clusters (grey crosses "
-       "= noise).")
+para("The comparison (Table 4, Figure 7c) is interesting because the two kinds of measure disagree. DBSCAN "
+     "has a better silhouette (0.554 vs 0.403) and Davies–Bouldin (0.529 vs 0.910), but it matches the real "
+     "bean types far worse (ARI 0.034 vs 0.306). To check that the noise removal was not causing this, I scored "
+     "k-Means on the same non-noise beans and got almost the same silhouette (0.408).")
+para("I think the main reason is how each algorithm defines a cluster. k-Means simply divides the space into "
+     "k regions around centres, so it is happy to cut a continuous mass of beans into 'small' and 'medium' "
+     "(Figure 8b). DBSCAN only separates regions with an empty, low-density gap between them. Apart from Bombay, "
+     "the six bean types form one continuous cloud (Figure 8a), so DBSCAN chains them all together. Only Bombay is "
+     "separated by a real gap. The 'Bombay vs everything else' split is very clean, which is why the internal "
+     "scores like it, but it says little about the bean types. This showed me that internal scores alone can be "
+     "misleading. DBSCAN's advantages are that it finds the number of clusters itself and flags outliers. Its "
+     "weaknesses are that it uses one density level for everything (the small beans are packed tightly, Bombay is "
+     "spread out) and that eps is hard to set in 16 dimensions. A variable-density method such as HDBSCAN might "
+     "do better.")
+figure("fig7_t3_dbscan.png", "(a) Distance to the 32nd nearest neighbour, with the chosen eps at the knee; "
+       "(b) number of clusters and noise % for other eps and MinPts values; (c) k-Means and DBSCAN on the same "
+       "measures.")
+figure("fig8_t3_cluster_maps.png", "The beans plotted on the first two principal components (for display only): "
+       "(a) real classes, (b) k-Means clusters, (c) DBSCAN clusters (grey crosses are noise).")
 
 heading("3.3B PCA Analysis", 2)
-para("PCA was applied to the **standardised** inputs. On raw data the first component would simply "
-     "reproduce Area, whose variance is about 10¹⁵ times larger than that of the shape factors.")
-para("**Explained variance and the number of components.** PC1 explains 55.6% of the variance "
-     "(eigenvalue 8.91), PC2 26.0% (4.17), PC3 8.1% (1.29), PC4 5.2% (0.83) and PC5 2.9%, giving cumulative "
-     "totals of 55.6, 81.7, 89.7, 94.9 and 97.8% (Figure 9a). Components 9–16 each explain less than 0.01%, "
-     "because many variables are near-deterministic functions of others: EquivDiameter = √(4·Area/π), and "
-     "AspectRation, Compactness and the shape factors are ratios of axes and area. The usual criteria give "
-     "3 components (Kaiser, eigenvalue > 1, and the scree elbow), 4 (Jolliffe's relaxed cut-off of 0.7, and "
-     "≥ 90% cumulative variance) or 5 (≥ 95%). **Four components (94.9% of the variance)** were retained. "
-     "This satisfies the 90% rule and Jolliffe's cut-off, which is preferred because the Kaiser rule tends to "
-     "keep too few components when variables are highly correlated (Jolliffe, 2002). PC4 also represents a "
-     "distinct, interpretable property, while PC5 adds only 2.9%.")
-para("**Contribution of the variables** (squared loadings, Figure 9b):")
-bullet("**PC1, 'size versus roundness':** MajorAxisLength 10.6%, ShapeFactor2 9.9% (−), Perimeter 9.7% "
-       "and EquivDiameter 8.9%. It is positive for all size and elongation variables and negative for "
-       "roundness, compactness and the shape factors, so it separates large, elongated beans from small, "
-       "round ones.")
-bullet("**PC2, 'width versus elongation' (shape independent of size):** MinorAxisLength 11.6%, "
-       "AspectRation 11.4% (−), Compactness 11.3% and ShapeFactor3 11.2%.")
-bullet("**PC3, 'outline regularity':** Solidity 54.6% and ShapeFactor4 26.1%. **PC4, 'bounding-box "
-       "fill':** Extent 88.1%.")
-figure("fig9_t3_pca.png", "(a) Scree plot with individual and cumulative explained variance (dotted lines "
-       "at 90% and 95%); (b) loadings of the 16 standardised variables on the four retained components.")
-para("**Clustering in the PCA space.** k-Means was applied to the four PC scores. The internal criteria "
-     "were recomputed in this space and again select k = 3 (silhouette and DB; CH gives 2), so k = 3 was kept "
-     "to allow a like-for-like comparison. A whitened version, with each PC rescaled to unit variance, was "
-     "added to test the effect of re-weighting the components. Table 5 compares effectiveness, stability "
-     "and cluster characteristics. Stability is measured in two ways. Bootstrap stability is the mean ARI "
-     "between the full-data partition and partitions learnt on 20 random 80% subsamples. Seed stability is "
-     "the mean pairwise ARI of 30 single-initialisation runs.")
-table("k-Means (k = 3) on the original features versus PCA-transformed data.",
+para("I applied PCA to the standardised features; without scaling, the first component would just be Area. The "
+     "first component explains 55.6% of the variance, the second 26.0%, the third 8.1%, the fourth 5.2% and the "
+     "fifth 2.9%. Together the first four explain 94.9% (Figure 9a). Components 9 to 16 explain almost nothing, "
+     "because many of the features are calculated from each other (for example, EquivDiameter comes straight "
+     "from Area).")
+para("To decide how many components to keep, I looked at several rules. The 'eigenvalue above 1' rule and the "
+     "bend in the scree plot both suggest 3, keeping at least 90% of the variance suggests 4, and 95% suggests 5. "
+     "I kept **4 components (94.9%)**. The third component alone only reaches 89.7%, and the fourth captures "
+     "something none of the others do (Extent), while a fifth would add less than 3%.")
+para("The loadings (Figure 9b) make the components easy to interpret. PC1 is mainly size: all the size "
+     "features load positively (MajorAxisLength contributes the most, 10.6%) and the roundness-type features "
+     "negatively, so it separates big, long beans from small, round ones. PC2 is shape regardless of size: "
+     "width and compactness against aspect ratio (each about 11%). PC3 is how regular the outline is (Solidity "
+     "55%, ShapeFactor4 26%), and PC4 is almost entirely Extent (88%).")
+figure("fig9_t3_pca.png", "(a) Variance explained by each component and in total (dotted lines at 90% and 95%); "
+       "(b) loadings of the 16 features on the four kept components.")
+para("I then ran k-Means on the 4 components. I rechecked the choice of k in this space and it still came out "
+     "as 3, so I kept k = 3 to make the comparison fair. As an extra test I also tried 'whitened' components, "
+     "where each component is rescaled to the same variance. Table 5 compares the three versions. Bootstrap "
+     "stability is how closely the clusters from 80% subsamples match the full result, and seed stability is how "
+     "much single-start runs agree with each other.")
+table("k-Means (k = 3) on the original features compared with the PCA versions.",
       ["Representation", "Silh. (own)", "Silh. (orig.)", "DB", "ARI", "NMI", "Agree. *", "Boot. stab.",
        "Seed stab.", "Cluster sizes"],
       [["Original (16 variables)", "0.403", "0.403", "0.910", "0.306", "0.495", "1.000", "0.997", "0.841",
@@ -504,90 +431,48 @@ table("k-Means (k = 3) on the original features versus PCA-transformed data.",
        ["Whitened PCA (4 PCs)", "0.241", "0.246", "1.516", "0.243", "0.325", "0.531", "0.699", "0.360",
         "960/554/486"]],
       [3.9, 1.2, 1.3, 1.2, 1.2, 1.2, 1.5, 1.5, 1.5, 2.5], size=8)
-para("* Agree. = ARI between the partition in that space and the partition in the original space; "
-     "Boot./Seed stab. = bootstrap and seed stability (mean ARI). "
-     "Silh. (orig.) is the silhouette of the same partition measured in the original standardised space.",
-     size=8)
-para("**Impact of PCA.** With four PCs, k-Means produces practically **the same clustering** as in the "
-     "original space: the agreement ARI is 0.990, only 5 of 2,000 beans change cluster, and the cluster sizes "
-     "and Bombay/small/medium profiles are the same. Effectiveness is unchanged (ARI 0.304 vs 0.306; NMI "
-     "0.492 vs 0.495) and so is stability (bootstrap 0.995 vs 0.997; seed stability 0.81 vs 0.84, a "
-     "difference within its run-to-run variability, Figure 10c). Fitting was about 2.5× faster (36 vs 91 ms). "
-     "The only metrics that 'improve' are the internal ones computed in the reduced space (silhouette "
-     "0.421 vs 0.403; DB 0.862 vs 0.910). Figure 10a shows that this is an artefact. Silhouette in the own "
-     "space grows steadily as components are dropped (0.65 with one PC), but when the same partitions are "
-     "evaluated in the original space their silhouette stays at 0.40. Discarding low-variance directions "
-     "shrinks the within-cluster distances; it does not make the clusters better separated.")
-para("**Critical discussion: why PCA neither improves nor clearly deteriorates the clustering here.**")
-bullet("**Characteristics of k-Means.** k-Means uses Euclidean distance, which is unchanged by the "
-       "orthogonal rotation PCA performs. Keeping six or more PCs reproduces the original partition "
-       "exactly (agreement ARI = 1.000), so truncation can only remove information, here 5.1% of the variance. The size-driven "
-       "cluster structure lies in PC1–PC2, and the leading principal components span the continuous solution "
-       "of the k-means problem (Ding & He, 2004), so truncating to four PCs preserves the structure.")
-bullet("**Feature correlation.** PCA removes the redundancy (16 correlated variables become 4 uncorrelated "
-       "ones) but does not re-weight it. The redundant size variables re-appear as the dominant PC1 "
-       "(56% of the variance), so k-Means in PCA space is still size-dominated and finds the same groups.")
-bullet("**Trade-off between dimensionality reduction and information.** Four PCs keep 94.9% of the "
-       "information with 4× fewer dimensions and give the same clustering quality. The benefit is efficiency, "
-       "a compact representation and 2-D visualisation (Figure 8), not effectiveness. Reducing further to "
-       "one PC starts to lose structure (agreement 0.937, bootstrap stability 0.968).")
-bullet("**Re-weighting the components hurts.** Whitening gives the low-variance components (Solidity, "
-       "Extent), which mostly hold within-variety noise, the same weight as the size axis. The partition "
-       "changes completely (agreement 0.53), ARI falls to 0.24 and the solution becomes unstable (seed "
-       "stability 0.36). On this dataset the high-variance directions carry the discriminative structure.")
-bullet("**The other algorithm.** Density-based clustering might be expected to benefit more, because "
-       "distances are less concentrated in four dimensions. However, DBSCAN on the four PCs (MinPts = 8, knee "
-       "eps = 1.44) again found only Bombay versus the rest (ARI 0.036). The overlap between varieties is "
-       "real and is not caused by high dimensionality.")
-para("**Conclusion.** PCA compressed the 16 strongly correlated inputs into four interpretable components "
-     "(size, shape, outline regularity, extent) with 95% of the information. Clustering on them is as "
-     "effective, stable and similar in character as clustering on the original features, and it is cheaper. "
-     "It is not more accurate, because k-Means already used this dominant variance structure. Getting "
-     "clusters closer to the seven varieties would need a different distance weighting or cluster model "
-     "(e.g. emphasising the shape components, or Gaussian mixtures), not dimensionality reduction alone.")
-figure("fig10_t3_pca_clustering.png", "k-Means (k = 3) as a function of the number of retained PCs: "
-       "(a) silhouette in the reduced versus the original space, (b) agreement with the true classes, "
-       "(c) stability; (d) comparison of the original, PCA and whitened-PCA representations.")
+para("* Agree. = how closely the clusters match the clusters from the original features (ARI). Silh. (orig.) "
+     "is the silhouette of the same clusters measured on the original features.", size=8)
+para("With 4 components, k-Means found practically the same clusters as before: only 5 of the 2,000 beans "
+     "changed cluster (agreement 0.990). The match with the real types (ARI 0.304 vs 0.306) and the stability "
+     "(0.995 vs 0.997) barely changed, and the cluster sizes and their size-based meaning stayed the same. It did "
+     "run about 2.5 times faster. At first the silhouette looked better in the PCA space (0.421 vs 0.403), but "
+     "Figure 10a shows this is misleading. The fewer components I kept, the higher the silhouette in the reduced "
+     "space (0.65 with one component), yet the same clusters measured on the original features stay at 0.40. "
+     "Dropping dimensions makes the clusters look tighter without actually changing them.")
+para("I think there are a few reasons why PCA neither helped nor hurt here. k-Means works on distances, and PCA "
+     "is basically a rotation, which does not change distances. Keeping six or more components gave exactly the "
+     "same clusters, and dropping down to four only removed 5% of the variance. The size structure that k-Means "
+     "finds lives in the first two components, which are always kept. PCA also removes the correlation between "
+     "features, but it does not reduce the weight of size: the many correlated size features simply become PC1, "
+     "which still carries 56% of the variance, so the clusters still follow size. The whitened version shows the "
+     "other side of this. Giving every component equal weight boosted outline regularity and Extent, which carry "
+     "mostly noise here. The clusters changed completely (agreement 0.53), the match with the real types dropped "
+     "(ARI 0.24) and the results became unstable. So in this data the high-variance directions are where the "
+     "useful structure is. Reducing too far does lose information: with only one component the clusters started "
+     "to drift (agreement 0.94). I also tried DBSCAN on the 4 components, and it again only separated Bombay from "
+     "the rest, which suggests the overlap between bean types is real and not just an effect of having many "
+     "dimensions.")
+para("Overall, PCA gave a smaller, easier-to-explain version of the data with the same clustering quality and a "
+     "faster run time, but not better clusters. Getting closer to the seven bean types would need a different way "
+     "of weighting the features or a different cluster model, not just fewer dimensions.")
+figure("fig10_t3_pca_clustering.png", "k-Means (k = 3) as the number of kept components changes: (a) silhouette "
+       "in the reduced and original space, (b) match with the real classes, (c) stability; (d) the three versions "
+       "side by side.")
 
 # =================================================================================================
 heading("Acknowledgement of AI use", 2)
-para("Claude (Anthropic, 2026), a generative AI tool, was used to help structure the analysis code, check "
-     "the implementation and draft the wording of this report. All code was executed and all results, "
-     "figures and statements were checked against the notebook outputs. The author takes responsibility for "
-     "the content.")
+para("I used Claude (Anthropic, 2026) to help plan the analysis, write and check parts of the Python code, and "
+     "improve the wording of this report. I ran all the code myself, and every number and figure in this report "
+     "comes from my notebook outputs.")
 
 heading("References", 1)
 refs = [
     "Anthropic. (2026). __Claude__ [Large language model]. https://claude.ai/",
-    "Ding, C., & He, X. (2004). K-means clustering via principal component analysis. In __Proceedings of "
-    "the Twenty-First International Conference on Machine Learning__ (p. 29). ACM. "
-    "https://doi.org/10.1145/1015330.1015408",
     "Gou, J., Zhan, Y., Rao, Y., Shen, X., Wang, X., & He, W. (2014). Improved pseudo nearest neighbor "
     "classification. __Knowledge-Based Systems, 70__, 361–375. https://doi.org/10.1016/j.knosys.2014.07.020",
-    "Hubert, L., & Arabie, P. (1985). Comparing partitions. __Journal of Classification, 2__(1), 193–218. "
-    "https://doi.org/10.1007/BF01908075",
-    "Jolliffe, I. T. (2002). __Principal component analysis__ (2nd ed.). Springer. https://doi.org/10.1007/b98835",
-    "Koklu, M., & Ozkan, I. A. (2020). Multiclass classification of dry beans using computer vision and "
-    "machine learning techniques. __Computers and Electronics in Agriculture, 174__, Article 105507. "
-    "https://doi.org/10.1016/j.compag.2020.105507",
     "Mitani, Y., & Hamamoto, Y. (2006). A local mean-based nonparametric classifier. __Pattern Recognition "
     "Letters, 27__(10), 1151–1159. https://doi.org/10.1016/j.patrec.2005.12.016",
-    "Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., "
-    "Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., "
-    "Perrot, M., & Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. __Journal of Machine "
-    "Learning Research, 12__, 2825–2830.",
-    "Rousseeuw, P. J. (1987). Silhouettes: A graphical aid to the interpretation and validation of cluster "
-    "analysis. __Journal of Computational and Applied Mathematics, 20__, 53–65. "
-    "https://doi.org/10.1016/0377-0427(87)90125-7",
-    "Sander, J., Ester, M., Kriegel, H.-P., & Xu, X. (1998). Density-based clustering in spatial databases: "
-    "The algorithm GDBSCAN and its applications. __Data Mining and Knowledge Discovery, 2__(2), 169–194. "
-    "https://doi.org/10.1023/A:1009745219419",
-    "Satopää, V., Albrecht, J., Irwin, D., & Raghavan, B. (2011). Finding a \"kneedle\" in a haystack: "
-    "Detecting knee points in system behavior. In __2011 31st International Conference on Distributed "
-    "Computing Systems Workshops__ (pp. 166–171). IEEE. https://doi.org/10.1109/ICDCSW.2011.20",
-    "Schubert, E., Sander, J., Ester, M., Kriegel, H.-P., & Xu, X. (2017). DBSCAN revisited, revisited: Why "
-    "and how you should (still) use DBSCAN. __ACM Transactions on Database Systems, 42__(3), Article 19. "
-    "https://doi.org/10.1145/3068335",
 ]
 for ref in refs:
     p = para(ref, size=9, align=WD_ALIGN_PARAGRAPH.LEFT, after=3)
